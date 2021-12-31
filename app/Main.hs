@@ -1,6 +1,7 @@
 module Main where
 
-import Lib
+import qualified HType
+
 
 main :: IO ()
-main = someFunc
+main = HType.app
