@@ -7,10 +7,8 @@ module HType (
 
 import Model
 
-import Data.Text (Text)
-import Graphics.Gloss.Data.Display (Display (InWindow))
 import Graphics.Gloss.Interface.Pure.Game
-import Optics.Core (Ixed (ix), folded, ifiltered, ifindOf, ifolded, itraversed, sumOf, toListOf, traversed, (%&), (%~), (&), (.~), (?~), (^.), (^..), (^?), _2)
+import Optics.Core (Ixed (ix), headOf, ifiltered, ifindOf, ifolded, itraversed, sumOf, toListOf, traversed, (%&), (%~), (&), (.~), (?~), (^.), (^?), _1, _2)
 import Optics.Indexed.Core (imapped, iover, (%))
 import Prelude hiding (Word)
 
@@ -36,7 +34,7 @@ viewModel m =
 
 
 viewWord :: Maybe Int -> Float -> Int -> Word -> Picture
-viewWord mFocus fontHeight idx (Word x y origWidth str) =
+viewWord focus fontHeight idx (Word x y origWidth str) =
     translate x y . scaleXY wordScaleFactor $
         pictures
             [ background
@@ -48,7 +46,7 @@ viewWord mFocus fontHeight idx (Word x y origWidth str) =
         rectangleSolid origWidth fontHeight
             & translate (origWidth / 2) (fontHeight / 4)
             & color (greyN 0.9)
-    highlight = if mFocus == Just idx then color red else id
+    highlight = if focus == Just idx then color red else id
 
 
 eventHandler :: Event -> Model -> Model
@@ -56,7 +54,7 @@ eventHandler e m
     -- First letter of focused word typed -> remove it
     | EventKey (Char c) Down _ _ <- e
       , Just focIndex <- m ^. mFocus
-      , Just (Word _ _ _ ((w, _) : ws)) <- m ^? mWords % ix focIndex
+      , Just ((w, _) : ws) <- m ^? mWords % ix focIndex % wUntypedChars
       , c == w =
         case ws of
             [] ->
@@ -70,7 +68,7 @@ eventHandler e m
     -- remove the letter an focus that word
     | EventKey (Char c) Down _ _ <- e
       , Nothing <- m ^. mFocus =
-        case ifindOf (mWords % itraversed) (\_ (Word _ _ _ ((x, _) : _)) -> x == c) m of
+        case ifindOf (mWords % itraversed) (\_ w -> headOf (wUntypedChars % ix 0 % _1) w == Just c) m of
             Just (focIndex, Word _ _ _ str) -> case str of
                 [_] ->
                     m -- one-letter word -> just remove it without focusing anything
@@ -93,7 +91,7 @@ scaleXY s = scale s s
 
 
 stepModel :: Float -> Model -> Model
-stepModel dt m = m
+stepModel _dt m = m
 
 -- TODO make the words move towards the gun
 -- TODO add sound feedback on mistyped letter / destroyed word

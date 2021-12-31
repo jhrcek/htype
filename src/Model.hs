@@ -4,7 +4,7 @@
 module Model where
 
 import Control.Monad (filterM)
-import Data.Char (isAscii, isAsciiLower, isAsciiUpper, isDigit)
+import Data.Char (isAsciiLower, toLower)
 import Data.Function (on)
 import Data.List (groupBy, sort)
 import Data.Maybe (mapMaybe)
@@ -43,7 +43,7 @@ makeLenses ''Word
 randomModel :: IO Model
 randomModel = do
     _ <- GLUT.getArgsAndInitialize
-    ws <- mapMaybe acceptableWord . words <$> readFile "text"
+    ws <- mapMaybe simplifyWord . words . fmap toLower <$> readFile "text"
     stdGen <- newStdGen
     g <- newIOGenM stdGen
     let byFirstLetter = groupBy ((==) `on` head) $ sort ws
@@ -66,15 +66,10 @@ randomModel = do
     pure $ Model pickedWords Nothing _mFontHeight
 
 
-acceptableChar :: Char -> Bool
-acceptableChar c =
-    isAsciiLower c || isAsciiUpper c || isDigit c || c `elem` ",.?!()-\'\""
-
-
-acceptableWord :: String -> Maybe String
-acceptableWord w = case filter acceptableChar w of
-    [] -> Nothing
-    word -> Just word
+simplifyWord :: String -> Maybe String
+simplifyWord word
+    | all isAsciiLower word = Just word
+    | otherwise = Nothing
 
 
 windowSize :: (Int, Int)
