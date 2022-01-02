@@ -42,7 +42,6 @@ library
     , optics-core
     , optics-th
     , random
-    , text
 
 executable htype-exe
   import:         common-options

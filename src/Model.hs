@@ -1,3 +1,4 @@
+{-# LANGUAGE NegativeLiterals #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 
@@ -8,8 +9,9 @@ import Data.Char (isAsciiLower, toLower)
 import Data.Function (on)
 import Data.List (groupBy, sort)
 import Data.Maybe (mapMaybe)
+import Graphics.Gloss (Picture (Blank), text, translate)
 import Graphics.UI.GLUT.Fonts (StrokeFont (Roman), fontHeight, stringWidth)
-import Optics.Core (sumOf, traversed, (%), _2)
+import Optics.Core (sumOf, traversed, (%), (&), _2)
 import Optics.TH (makeLenses)
 import System.Random.Stateful (Uniform (uniformM), UniformRange (uniformRM), newIOGenM, newStdGen)
 import Prelude hiding (Word)
@@ -23,6 +25,8 @@ data Model = Model
     { _mWords :: [Word]
     , _mFocus :: Maybe Int
     , _mFontHeight :: Float
+    , _mTime :: Float
+    , _mPaused :: Bool
     }
     deriving (Show)
 
@@ -48,22 +52,22 @@ randomModel = do
     g <- newIOGenM stdGen
     let byFirstLetter = groupBy ((==) `on` head) $ sort ws
     listsToKeep <- filterM (\_ -> uniformM g) byFirstLetter
-    let maxX = fst windowSize `div` 2
-        maxY = snd windowSize `div` 2
+    let maxX = windowWidth / 2
+        maxY = windowHeight / 2
     pickedWords <-
         traverse
             ( \wordsWithSameLetter -> do
                 w <- (wordsWithSameLetter !!) <$> uniformRM (0, length wordsWithSameLetter - 1) g
                 charsWithWidth <- traverse (\c -> (c,) . fromIntegral <$> stringWidth Roman [c]) w
                 let wordWidth = sumOf (traversed % _2) charsWithWidth
-                x <- fromIntegral <$> uniformRM (- maxX, maxX - round (wordScaleFactor * wordWidth)) g
-                y <- fromIntegral <$> uniformRM (- maxY, maxY - 30) g
+                x <- uniformRM (- maxX, maxX - wordScaleFactor * wordWidth) g
+                y <- uniformRM (- maxY, maxY - 30) g
                 pure (Word x y wordWidth charsWithWidth)
             )
             listsToKeep
     _mFontHeight <- fontHeight Roman
     GLUT.exit
-    pure $ Model pickedWords Nothing _mFontHeight
+    pure $ Model pickedWords Nothing _mFontHeight 0 False
 
 
 simplifyWord :: String -> Maybe String
@@ -73,7 +77,19 @@ simplifyWord word
 
 
 windowSize :: (Int, Int)
-windowSize = (480, 720)
+windowSize = (windowWidth, windowHeight)
+
+
+windowWidth, windowHeight :: Num a => a
+windowWidth = 480
+windowHeight = 720
+
+
+pausedText :: Bool -> Picture
+pausedText False = Blank
+pausedText True =
+    text "Paused"
+        & translate -212.5 {-half of `print =<< stringWidth Roman "Paused"` -} 0
 
 
 wordScaleFactor :: Float
