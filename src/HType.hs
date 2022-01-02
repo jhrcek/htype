@@ -7,7 +7,9 @@ module HType (
 
 import Model
 
+import Data.Maybe (fromMaybe)
 import Graphics.Gloss.Interface.Pure.Game
+import Graphics.Gloss.Juicy (loadJuicyJPG)
 import Optics.Core (Ixed (ix), headOf, ifiltered, ifindOf, ifolded, itraversed, sumOf, toListOf, traversed, (%&), (%~), (&), (.~), (?~), (^.), (^?), _1, _2)
 import Optics.Indexed.Core (imapped, iover, (%))
 import Text.Printf (printf)
@@ -16,24 +18,34 @@ import Prelude hiding (Word)
 
 app :: IO ()
 app = do
+    bgPicture <- fromMaybe Blank <$> loadJuicyJPG "stars.jpg"
     initialModel <- randomModel
     play
         (InWindow "HType" windowSize (10, 10))
         white
-        10
+        100
         initialModel
-        viewModel
+        (viewModel bgPicture)
         eventHandler
         stepModel
 
 
-viewModel :: Model -> Picture
-viewModel m =
+viewModel :: Picture -> Model -> Picture
+viewModel bgPicture m =
     mconcat
-        [ viewWords m
+        [ viewBackground (m ^. mTime) bgPicture
+        , viewWords m
         , viewTime (m ^. mTime)
         , pausedText (m ^. mPaused)
         ]
+
+
+viewBackground :: Float -> Picture -> Picture
+viewBackground time bgPicture =
+    let diff :: Num a => a
+        diff = bgImageHeight - windowHeight
+        y = fromIntegral ((round $ -5 * time :: Int) `mod` diff) - diff / 2
+     in translate 0 y bgPicture
 
 
 viewWords :: Model -> Picture
@@ -62,8 +74,8 @@ viewWord focus fontHeight idx (Word x y origWidth str) =
     background =
         rectangleSolid origWidth fontHeight
             & translate (origWidth / 2) (fontHeight / 4)
-            & color (greyN 0.9)
-    highlight = if focus == Just idx then color red else id
+            & color (makeColor 1 1 1 0.15)
+    highlight = color $ if focus == Just idx then orange else white
 
 
 eventHandler :: Event -> Model -> Model

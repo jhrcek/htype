@@ -80,9 +80,10 @@ windowSize :: (Int, Int)
 windowSize = (windowWidth, windowHeight)
 
 
-windowWidth, windowHeight :: Num a => a
+windowWidth, windowHeight, bgImageHeight :: Num a => a
 windowWidth = 480
 windowHeight = 720
+bgImageHeight = 1138
 
 
 pausedText :: Bool -> Picture
