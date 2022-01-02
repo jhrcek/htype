@@ -60,7 +60,7 @@ viewTime seconds =
         & text
         & color white
         & scaleXY wordScaleFactor
-        & translate 0 (- windowHeight / 2 + 10)
+        & translate (windowWidth / 2 - 40) (- windowHeight / 2 + 10)
 
 
 viewWord :: Maybe Int -> Float -> Int -> Word -> Picture

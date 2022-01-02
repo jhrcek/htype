@@ -9,7 +9,7 @@ import Data.Char (isAsciiLower, toLower)
 import Data.Function (on)
 import Data.List (groupBy, sort)
 import Data.Maybe (mapMaybe)
-import Graphics.Gloss (Picture (Blank), text, translate)
+import Graphics.Gloss (Picture (Blank), color, text, translate, white)
 import Graphics.UI.GLUT.Fonts (StrokeFont (Roman), fontHeight, stringWidth)
 import Optics.Core (sumOf, traversed, (%), (&), _2)
 import Optics.TH (makeLenses)
@@ -90,6 +90,7 @@ pausedText :: Bool -> Picture
 pausedText False = Blank
 pausedText True =
     text "Paused"
+        & color white
         & translate -212.5 {-half of `print =<< stringWidth Roman "Paused"` -} 0
 
 
