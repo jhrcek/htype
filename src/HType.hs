@@ -58,6 +58,7 @@ viewTime :: Float -> Picture
 viewTime seconds =
     printf "%.1f" seconds
         & text
+        & color white
         & scaleXY wordScaleFactor
         & translate 0 (- windowHeight / 2 + 10)
 
@@ -136,7 +137,10 @@ scaleXY s = scale s s
 stepModel :: Float -> Model -> Model
 stepModel dt m
     | m ^. mPaused = m
-    | otherwise = m & mTime %~ (+ dt)
+    | otherwise =
+        m
+            & mTime %~ (+ dt)
+            & mWords % traversed % wy %~ subtract (10 * dt)
 
 -- TODO make the words move towards the gun
 -- TODO add sound feedback on mistyped letter / destroyed word
