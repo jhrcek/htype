@@ -9,11 +9,32 @@ import Data.Char (isAsciiLower, toLower)
 import Data.Function (on)
 import Data.List (groupBy, sort)
 import Data.Maybe (mapMaybe)
-import Graphics.Gloss (Picture (Blank), color, text, translate, white)
-import Graphics.UI.GLUT.Fonts (StrokeFont (Roman), fontHeight, stringWidth)
-import Optics.Core (sumOf, traversed, (%), (&), _2)
+import Graphics.Gloss (
+    Picture (Blank),
+    color,
+    text,
+    translate,
+    white,
+ )
+import Graphics.UI.GLUT.Fonts (
+    StrokeFont (Roman),
+    fontHeight,
+    stringWidth,
+ )
+import Optics.Core (
+    sumOf,
+    traversed,
+    (%),
+    (&),
+    _2,
+ )
 import Optics.TH (makeLenses)
-import System.Random.Stateful (Uniform (uniformM), UniformRange (uniformRM), newIOGenM, newStdGen)
+import System.Random.Stateful (
+    Uniform (uniformM),
+    UniformRange (uniformRM),
+    newIOGenM,
+    newStdGen,
+ )
 import Prelude hiding (Word)
 
 -- Using GLUT to query string width and font height based on
@@ -53,7 +74,6 @@ randomModel = do
     let byFirstLetter = groupBy ((==) `on` head) $ sort ws
     listsToKeep <- filterM (\_ -> uniformM g) byFirstLetter
     let maxX = windowWidth / 2
-        maxY = windowHeight / 2
     pickedWords <-
         traverse
             ( \wordsWithSameLetter -> do
@@ -61,7 +81,7 @@ randomModel = do
                 charsWithWidth <- traverse (\c -> (c,) . fromIntegral <$> stringWidth Roman [c]) w
                 let wordWidth = sumOf (traversed % _2) charsWithWidth
                 x <- uniformRM (- maxX, maxX - wordScaleFactor * wordWidth) g
-                y <- uniformRM (- maxY, maxY - 30) g
+                y <- (\y' -> windowHeight * (0.5 + 0.1 * y')) <$> uniformRM (0, 1) g
                 pure (Word x y wordWidth charsWithWidth)
             )
             listsToKeep
@@ -84,6 +104,11 @@ windowWidth, windowHeight, bgImageHeight :: Num a => a
 windowWidth = 480
 windowHeight = 720
 bgImageHeight = 1138
+
+
+playerX, playerY :: Fractional a => a
+playerX = 0
+playerY = (-0.45) * windowHeight
 
 
 pausedText :: Bool -> Picture

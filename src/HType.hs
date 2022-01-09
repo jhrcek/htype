@@ -1,5 +1,7 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NegativeLiterals #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module HType (
     app,
@@ -8,8 +10,9 @@ module HType (
 import Model
 
 import Data.Maybe (fromMaybe)
+import Graphics.Gloss.Data.Picture
 import Graphics.Gloss.Interface.Pure.Game
-import Graphics.Gloss.Juicy (loadJuicyJPG)
+import Graphics.Gloss.Juicy (loadJuicyJPG, loadJuicyPNG)
 import Optics.Core (Ixed (ix), headOf, ifiltered, ifindOf, ifolded, itraversed, sumOf, toListOf, traversed, (%&), (%~), (&), (.~), (?~), (^.), (^?), _1, _2)
 import Optics.Indexed.Core (imapped, iover, (%))
 import Text.Printf (printf)
@@ -18,23 +21,29 @@ import Prelude hiding (Word)
 
 app :: IO ()
 app = do
-    bgPicture <- fromMaybe Blank <$> loadJuicyJPG "stars.jpg"
+    images <- loadImages
     initialModel <- randomModel
     play
         (InWindow "HType" windowSize (10, 10))
         white
         100
         initialModel
-        (viewModel bgPicture)
+        (viewModel images)
         eventHandler
         stepModel
 
 
-viewModel :: Picture -> Model -> Picture
-viewModel bgPicture m =
+data Images = Images
+    { iBackground :: Picture
+    , iMine :: Picture
+    }
+
+
+viewModel :: Images -> Model -> Picture
+viewModel Images{iBackground, iMine} m =
     mconcat
-        [ viewBackground (m ^. mTime) bgPicture
-        , viewWords m
+        [ viewBackground (m ^. mTime) iBackground
+        , viewWords m iMine (m ^. mTime)
         , viewTime (m ^. mTime)
         , pausedText (m ^. mPaused)
         ]
@@ -48,10 +57,10 @@ viewBackground time bgPicture =
      in translate 0 y bgPicture
 
 
-viewWords :: Model -> Picture
-viewWords m =
+viewWords :: Model -> Picture -> Float -> Picture
+viewWords m mine time =
     pictures $
-        iover imapped (viewWord (m ^. mFocus) (m ^. mFontHeight)) (m ^. mWords)
+        iover imapped (viewWord mine time (m ^. mFocus) (m ^. mFontHeight)) (m ^. mWords)
 
 
 viewTime :: Float -> Picture
@@ -63,19 +72,24 @@ viewTime seconds =
         & translate (windowWidth / 2 - 40) (- windowHeight / 2 + 10)
 
 
-viewWord :: Maybe Int -> Float -> Int -> Word -> Picture
-viewWord focus fontHeight idx (Word x y origWidth str) =
-    translate x y . scaleXY wordScaleFactor $
+viewWord :: Picture -> Float -> Maybe Int -> Float -> Int -> Word -> Picture
+viewWord mine time focus fontHeight idx (Word x y origWidth str) =
+    translate x y $
         pictures
-            [ background
-            , translate typedCharsSpace 0 . highlight . text $ fmap fst str
+            [ scaleXY wordScaleFactor $
+                pictures
+                    [ background
+                    , translate typedCharsSpace 0 . highlight . text $ fmap fst str
+                    ]
+            , translate (wordScaleFactor * origWidth) (wordScaleFactor * fontHeight) $
+                rotate (90 * time) mine
             ]
   where
     typedCharsSpace = origWidth - sumOf (traversed % _2) str
     background =
         rectangleSolid origWidth fontHeight
             & translate (origWidth / 2) (fontHeight / 4)
-            & color (makeColor 1 1 1 0.15)
+            & color (makeColor 0 0 0 0.8)
     highlight = color $ if focus == Just idx then orange else white
 
 
@@ -142,8 +156,17 @@ stepModel dt m
             & mTime %~ (+ dt)
             & mWords % traversed % wy %~ subtract (10 * dt)
 
+
+loadImages :: IO Images
+loadImages = do
+    iBackground <- fromMaybe Blank <$> loadJuicyJPG "images/stars.jpg"
+    iMine <- fromMaybe Blank <$> loadJuicyPNG "images/mine.png"
+    pure Images{..}
+
 -- TODO make the words move towards the gun
 -- TODO add sound feedback on mistyped letter / destroyed word
 -- TODO generate different levels
 --    Lower levels have fewer words and the words are generally shorter, slower-flying words
 -- TODO add state transitions between START - LEVEL 1+ - GAME OVER screens
+-- TODO draw ship, turn it as it fires
+-- TODO add different types of enemies
