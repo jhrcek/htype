@@ -9,32 +9,32 @@ import Data.Char (isAsciiLower, toLower)
 import Data.Function (on)
 import Data.List (groupBy, sort)
 import Data.Maybe (mapMaybe)
-import Graphics.Gloss (
-    Picture (Blank),
-    color,
-    text,
-    translate,
-    white,
- )
-import Graphics.UI.GLUT.Fonts (
-    StrokeFont (Roman),
-    fontHeight,
-    stringWidth,
- )
-import Optics.Core (
-    sumOf,
-    traversed,
-    (%),
-    (&),
-    _2,
- )
+import Graphics.Gloss
+    ( Picture (Blank)
+    , color
+    , text
+    , translate
+    , white
+    )
+import Graphics.UI.GLUT.Fonts
+    ( StrokeFont (Roman)
+    , fontHeight
+    , stringWidth
+    )
+import Optics.Core
+    ( sumOf
+    , traversed
+    , (%)
+    , (&)
+    , _2
+    )
 import Optics.TH (makeLenses)
-import System.Random.Stateful (
-    Uniform (uniformM),
-    UniformRange (uniformRM),
-    newIOGenM,
-    newStdGen,
- )
+import System.Random.Stateful
+    ( Uniform (uniformM)
+    , UniformRange (uniformRM)
+    , newIOGenM
+    , newStdGen
+    )
 import Prelude hiding (Word)
 
 -- Using GLUT to query string width and font height based on
@@ -80,7 +80,7 @@ randomModel = do
                 w <- (wordsWithSameLetter !!) <$> uniformRM (0, length wordsWithSameLetter - 1) g
                 charsWithWidth <- traverse (\c -> (c,) . fromIntegral <$> stringWidth Roman [c]) w
                 let wordWidth = sumOf (traversed % _2) charsWithWidth
-                x <- uniformRM (- maxX, maxX - wordScaleFactor * wordWidth) g
+                x <- uniformRM (-maxX, maxX - wordScaleFactor * wordWidth) g
                 y <- (\y' -> windowHeight * (0.5 + 0.1 * y')) <$> uniformRM (0, 1) g
                 pure (Word x y wordWidth charsWithWidth)
             )

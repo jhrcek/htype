@@ -3,9 +3,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module HType (
-    app,
-) where
+module HType
+    ( app
+    )
+where
 
 import Model
 
@@ -69,7 +70,7 @@ viewTime seconds =
         & text
         & color white
         & scaleXY wordScaleFactor
-        & translate (windowWidth / 2 - 40) (- windowHeight / 2 + 10)
+        & translate (windowWidth / 2 - 40) (-windowHeight / 2 + 10)
 
 
 viewWord :: Picture -> Float -> Maybe Int -> Float -> Int -> Word -> Picture
@@ -100,7 +101,7 @@ eventHandler e m =
             TypedLetter c | not (m ^. mPaused) -> case m ^. mFocus of
                 Just focIndex
                     | Just ((w, _) : ws) <- m ^? mWords % ix focIndex % wUntypedChars
-                      , c == w ->
+                    , c == w ->
                         case ws of
                             [] ->
                                 m -- no letters left - remove the word and unfocus it
